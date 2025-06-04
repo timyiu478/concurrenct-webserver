@@ -3,11 +3,12 @@
 #include "io_helper.h"
 #include "pthread.h"
 
-#define MAXBUF (50)
 
 char default_root[] = ".";
 
-int conn_fd_buffer[MAXBUF];
+int MAXBUF = 1;
+
+int *conn_fd_buffer;
 int fill_ptr = 0;
 int use_ptr = 0;
 int conn_fd_counter = 0;
@@ -56,7 +57,7 @@ int main(int argc, char *argv[]) {
     int threads = 1;
     
     // parse command line options
-    while ((c = getopt(argc, argv, "d:p:t:")) != -1) {
+    while ((c = getopt(argc, argv, "d:p:t:b:")) != -1) {
       switch (c) {
       case 'd':
           root_dir = optarg;
@@ -67,11 +68,16 @@ int main(int argc, char *argv[]) {
       case 't':
           threads = atoi(optarg);
           break;
+      case 'b':
+          MAXBUF = atoi(optarg);
+          break;
       default:
-          fprintf(stderr, "usage: wserver [-d basedir] [-p port]\n");
+          fprintf(stderr, "usage: wserver [-d basedir] [-p port] [-t threads] [-b buffers]\n");
           exit(1);
 	    }
     }
+
+    conn_fd_buffer = malloc(sizeof(int) * MAXBUF);
 
     // run the woker threads
     pthread_t worker_threads[threads];
@@ -98,6 +104,8 @@ int main(int argc, char *argv[]) {
       pthread_cond_signal(&fill);
       pthread_mutex_unlock(&mutex);
     }
+
+    free(conn_fd_buffer);
 
     return 0;
 }
