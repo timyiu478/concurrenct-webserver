@@ -2,28 +2,57 @@
 #include "request.h"
 #include "io_helper.h"
 
+#define MAXBUF (20)
+
 char default_root[] = ".";
 
+int conn_fd_buffer[MAXBUF];
+int fill_ptr = 0;
+int use_ptr = 0;
+int conn_fd_counter = 0;
+
+void put_conn_fd(int conn_fd) {
+    conn_fd_buffer[fill_ptr] = conn_fd;
+    fill_ptr = (fill_ptr + 1) % MAXBUF;
+    conn_fd_counter++;
+}
+
+int get_conn_fd() {
+    if (use_ptr == fill_ptr) {
+        return -1; // buffer is empty
+    }
+    int fd = conn_fd_buffer[use_ptr];
+    use_ptr = (use_ptr + 1) % MAXBUF;
+    conn_fd_counter--;
+    return fd;
+}
+
 //
-// ./wserver [-d <basedir>] [-p <portnum>] 
+// ./wserver [-d <basedir>] [-p <portnum>] [-t threads]
 // 
 int main(int argc, char *argv[]) {
     int c;
     char *root_dir = default_root;
     int port = 10000;
+    int threads = 1;
     
-    while ((c = getopt(argc, argv, "d:p:")) != -1)
-	switch (c) {
-	case 'd':
-	    root_dir = optarg;
-	    break;
-	case 'p':
-	    port = atoi(optarg);
-	    break;
-	default:
-	    fprintf(stderr, "usage: wserver [-d basedir] [-p port]\n");
-	    exit(1);
-	}
+    // parse command line options
+    while ((c = getopt(argc, argv, "d:p:")) != -1) {
+      switch (c) {
+      case 'd':
+          root_dir = optarg;
+          break;
+      case 'p':
+          port = atoi(optarg);
+          break;
+      case 't':
+          threads = atoi(optarg);
+          break;
+      default:
+          fprintf(stderr, "usage: wserver [-d basedir] [-p port]\n");
+          exit(1);
+	    }
+    }
 
     // run out of this directory
     chdir_or_die(root_dir);
@@ -31,12 +60,13 @@ int main(int argc, char *argv[]) {
     // now, get to work
     int listen_fd = open_listen_fd_or_die(port);
     while (1) {
-	struct sockaddr_in client_addr;
-	int client_len = sizeof(client_addr);
-	int conn_fd = accept_or_die(listen_fd, (sockaddr_t *) &client_addr, (socklen_t *) &client_len);
-	request_handle(conn_fd);
-	close_or_die(conn_fd);
+      struct sockaddr_in client_addr;
+      int client_len = sizeof(client_addr);
+      int conn_fd = accept_or_die(listen_fd, (sockaddr_t *) &client_addr, (socklen_t *) &client_len);
+      request_handle(conn_fd);
+      close_or_die(conn_fd);
     }
+
     return 0;
 }
 
