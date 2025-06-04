@@ -12,8 +12,8 @@ $ ./wserver -d <directory> -p <port> -t <threads> -b <max_connections>
 
 We use `httperf` to simulate multiple clients making requests to the server. Since the `spin.cgi` script is designed to take a 1 second pause, we can use it to test the server's ability to handle concurrent requests. We test the following server configurations:
 
-1. 1000 connections with 100 threads
-2. 1000 connections with 100 threads
+1. 100 threads with max 1000 connections
+2. 10 threads with max 1000 connections
 
 We expect the config 1 to handle the requests efficiently, while config 2 should struggle due to the limited number of threads.
 
