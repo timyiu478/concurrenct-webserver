@@ -17,6 +17,12 @@ We use `httperf` to simulate multiple clients making requests to the server. Sin
 
 We expect the config 1 to handle the requests efficiently, while config 2 should struggle due to the limited number of threads.
 
+### Runtime Specifications
+
+- CPU: 2.3 GHz Quad-Core Intel Core i5
+- Memory: 8 GB 2133 MHz LPDDR3
+- OS: macOS 15.3.1
+
 ### Config 1: 100 Threads, 1000 Max Connections
 
 ```bash
