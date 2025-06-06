@@ -10,7 +10,7 @@ $ ./wserver -d <directory> -p <port> -t <threads> -b <max_connections>
 
 ## Test the multithreading  with `httperf` and `spin.cgi`
 
-We use `httperf` to simulate multiple clients making requests to the server. Since the `spin.cgi` script is designed to take a 1 second pause, we can use it to test the server's ability to handle concurrent requests. We test the following server configurations:
+We use `httperf` to simulate multiple clients making requests to the server. Since the `spin.cgi` script is designed to take a 1 second pause, we can use it to test the server's ability to handle concurrent requests (while the thread issuing the I/O request suspends for waiting the I/O to complete, other threads can run, thus enabling the server to make progress). We test the following server configurations:
 
 1. 100 threads with max 1000 connections
 2. 10 threads with max 1000 connections
