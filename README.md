@@ -2,6 +2,10 @@
 
 This project implements a simple concurrent web server in C, designed to handle multiple requests simultaneously using multithreading. The server is capable of serving static files and executing CGI scripts.
 
+## Design Overview
+
+![](assets/design_overview.png)
+
 ## Usage
 
 ```bash
