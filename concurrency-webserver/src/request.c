@@ -1,4 +1,3 @@
-#include "io_helper.h"
 #include "request.h"
 
 //
@@ -6,7 +5,6 @@
 // Hopefully this is not a problem ... :)
 //
 
-#define MAXBUF (8192)
 
 void request_error(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg) {
     char buf[MAXBUF], body[MAXBUF];
@@ -176,5 +174,40 @@ void request_handle(int fd) {
           return;
       }
       request_serve_dynamic(fd, filename, cgiargs);
+    }
+}
+
+
+void request_parse(int fd, HTTPRequest *req) {
+    readline_or_die(fd, req->buf, MAXBUF);
+    sscanf(req->buf, "%s %s %s", req->method, req->uri, req->version);
+    printf("method:%s uri:%s version:%s\n", req->method, req->uri, req->version);
+    
+    if (strcasecmp(req->method, "GET")) {
+      request_error(fd, req->method, "501", "Not Implemented", "server does not implement this method");
+      return;
+    }
+    request_read_headers(fd);
+    
+    req->is_static = request_parse_uri(req->uri, req->filename, req->cgiargs);
+    if (stat(req->filename, &req->sbuf) < 0) {
+      request_error(fd, req->filename, "404", "Not found", "server could not find this file");
+      return;
+    }
+}
+
+void request_handle_without_parse(int fd, HTTPRequest *req) {
+    if (req->is_static) {
+      if (!(S_ISREG(req->sbuf.st_mode)) || !(S_IRUSR & req->sbuf.st_mode)) {
+          request_error(fd, req->filename, "403", "Forbidden", "server could not read this file");
+          return;
+      }
+      request_serve_static(fd, req->filename, req->sbuf.st_size);
+    } else {
+      if (!(S_ISREG(req->sbuf.st_mode)) || !(S_IXUSR & req->sbuf.st_mode)) {
+          request_error(fd, req->filename, "403", "Forbidden", "server could not run this CGI program");
+          return;
+      }
+      request_serve_dynamic(fd, req->filename, req->cgiargs);
     }
 }

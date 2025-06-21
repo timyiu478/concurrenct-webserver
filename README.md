@@ -9,7 +9,7 @@ This project implements a simple concurrent web server in C, designed to handle 
 ## Usage
 
 ```bash
-$ ./wserver -d <directory> -p <port> -t <threads> -b <max_connections>
+$ ./wserver -d <directory> -p <port> -t <threads> -s <schedule_policy> -b <max_connections>
 ```
 
 ## Test the multithreading  with `httperf` and `spin.cgi`
@@ -91,3 +91,39 @@ Errors: fd-unavail 0 addrunavail 0 ftab-full 0 other 0
 ### Analysis
 
 The config 1 is 10 times faster than config 2.
+
+### Simple Test on Shortest File First Schedule Policy
+
+We added `sleep(10)` in line 117 to allow simply manually send some HTTP requsts to the server for getting files with various size:
+
+- random_500: 136175 bytes
+- random_100: 27977 bytes
+
+Request Worker Code Snippest:
+
+```c
+   115	  } else if (SCHE_POLY == SCHE_POLY_SFF){
+   116	      while (1) {
+   117	        // sleep(10); // for testing purpose which allow buffering the requests in the min heap
+   118	        HTTPRequest *req = NULL;
+   119	        int conn_fd = get_conn_fd(&req);
+   120	        assert(conn_fd != 0);
+   121	        assert(req != NULL);
+   122	        printf("Serving uri:%s\n", req->uri);
+   123	        request_handle_without_parse(conn_fd, req);
+   124	        close_or_die(conn_fd);
+   125	        free(req);
+   126	      }
+   127	  }
+   128	}
+```
+
+The below lines are the output of web server that running with shortest file first policy. We can see that the server first receive the request of getting file `/random_500` then the request of getting file `/random_100`. As we expected, the server first serve `/random_100` and then serve `/random_500`.
+
+```bash
+❯ ./wserver -p 8080 -d "./static" -t 1 -b 10 -s 1
+method:GET uri:/random_500 version:HTTP/1.1
+method:GET uri:/random_100 version:HTTP/1.1
+Serving uri:/random_100
+Serving uri:/random_500
+```
